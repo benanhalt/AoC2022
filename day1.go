@@ -10,6 +10,8 @@ import (
 
 func main() {
 	f, _ := os.Open("input1.txt")
+	defer f.Close()
+
 	scanner := bufio.NewScanner(f)
 	scanner.Split(bufio.ScanLines)
 
@@ -26,14 +28,7 @@ func main() {
 		}
 	}
 
-	f.Close()
-
-	sort.Float64s(sums)
-	fmt.Println("Part 1:", sums[len(sums)-1])
-
-	total := 0.0
-	for _, v := range sums[len(sums)-3:] {
-		total += v
-	}
-	fmt.Println("Part 2:", total)
+	sort.Sort(sort.Reverse(sort.Float64Slice(sums)))
+	fmt.Println("Part 1:", sums[0])
+	fmt.Println("Part 2:", sums[0] + sums[1] + sums[2])
 }
