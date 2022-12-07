@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"math/bits"
 )
 
 func main() {
@@ -13,18 +14,15 @@ func main() {
 }
 
 func findMarker(f []byte, length int) int {
-	for i := length; i < len(f); i++ {
-		if countChars(f[i-length:i]) == length {
-			return i
+	var mask uint32
+	for i := 0; i < len(f); i++ {
+		mask = mask ^ (1 << (f[i] - 'a'))
+		if i >= length {
+			mask = mask ^ (1 << (f[i-length] - 'a'))
+		}
+		if bits.OnesCount32(mask) == length {
+			return i + 1
 		}
 	}
 	return -1
-}
-
-func countChars(cs []byte) int {
-	m := make(map[byte]bool)
-	for _, c := range cs {
-		m[c] = true
-	}
-	return len(m)
 }
