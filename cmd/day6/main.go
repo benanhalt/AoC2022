@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	f, _ := os.ReadFile("input6.txt")
+	f, _ := os.ReadFile("input.txt")
 
 	fmt.Println("Part 1:", findMarker(f, 4))
 	fmt.Println("Part 2:", findMarker(f, 14))

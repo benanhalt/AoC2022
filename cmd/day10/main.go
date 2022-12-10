@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	f, _ := os.ReadFile("input10.txt")
+	f, _ := os.ReadFile("input.txt")
 	lines := strings.Split(string(f), "\n")
 
 	cycle := 0

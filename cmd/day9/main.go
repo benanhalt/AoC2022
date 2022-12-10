@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	f, _ := os.ReadFile("input9.txt")
+	f, _ := os.ReadFile("input.txt")
 	lines := strings.Split(string(f), "\n")
 
 	h := [2]int{}

@@ -1,15 +1,15 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"os"
-	"bufio"
-	"strconv"
 	"sort"
+	"strconv"
 )
 
 func main() {
-	f, _ := os.Open("input1.txt")
+	f, _ := os.Open("input.txt")
 	defer f.Close()
 
 	scanner := bufio.NewScanner(f)
@@ -30,5 +30,5 @@ func main() {
 
 	sort.Sort(sort.Reverse(sort.Float64Slice(sums)))
 	fmt.Println("Part 1:", sums[0])
-	fmt.Println("Part 2:", sums[0] + sums[1] + sums[2])
+	fmt.Println("Part 2:", sums[0]+sums[1]+sums[2])
 }
