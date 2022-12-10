@@ -2,10 +2,10 @@ package main
 
 import (
 	"fmt"
-	"os"
-	"strings"
-	"strconv"
 	"math"
+	"os"
+	"strconv"
+	"strings"
 )
 
 func main() {
@@ -13,7 +13,6 @@ func main() {
 	lines := strings.Split(string(f), "\n")
 
 	h := [2]int{}
-	t := [2]int{}
 	ks := [9][2]int{}
 	seen := make(map[[2]int]bool)
 	seen2 := make(map[[2]int]bool)
@@ -40,10 +39,9 @@ func main() {
 		for s := 0; s < steps; s++ {
 			h[0] += dx
 			h[1] += dy
-			t = follow(h, t)
-			seen[t] = true
 
 			ks[0] = follow(h, ks[0])
+			seen[ks[0]] = true
 			for i := 1; i < 9; i++ {
 				ks[i] = follow(ks[i-1], ks[i])
 			}
@@ -55,57 +53,38 @@ func main() {
 }
 
 func follow(h, t [2]int) [2]int {
-	switch h[0] - t[0] {
-	case 0:
-		switch h[1] - t[1] {
-		case 2:
-			t[1] += 1
-		case -2:
-			t[1] -= 1
-		}
-	case 1:
-		switch h[1] - t[1] {
-		case 2:
-			t[0] += 1
-			t[1] += 1
-		case -2:
-			t[0] += 1
-			t[1] -= 1
-		}
-	case -1:
-		switch h[1] - t[1] {
-		case 2:
-			t[0] -= 1
-			t[1] += 1
-		case -2:
-			t[0] -= 1
-			t[1] -= 1
-		}
-	case 2:
-		switch h[1] - t[1] {
-		case 0:
-			t[0] += 1
-		case 1, 2:
-			t[0] += 1
-			t[1] += 1
-		case -1, -2:
-			t[0] += 1
-			t[1] -= 1
-		}
-	case -2:
-		switch h[1] - t[1] {
-		case 0:
-			t[0] -= 1
-		case 1, 2:
-			t[0] -= 1
-			t[1] += 1
-		case -1, -2:
-			t[0] -= 1
-			t[1] -= 1
+	if math.Abs(float64(h[0]-t[0])) < 2 && math.Abs(float64(h[1]-t[1])) < 2 {
+		// within 1 step in both dimensions
+		return t
+	}
+
+	dirs := [8][2]int{
+		{-1, -1},
+		{-1, 0},
+		{-1, 1},
+		{0, -1},
+		{0, 1},
+		{1, -1},
+		{1, 0},
+		{1, 1}}
+
+	// If t has to move, choose the direction that minimizes the
+	// distance in both dimensions. IOW, adjacent if possible.
+	best, ok := t, false
+	for _, d := range dirs {
+		tt := [2]int{t[0] + d[0], t[1] + d[1]}
+		if math.Abs(float64(h[0]-tt[0]))+math.Abs(float64(h[1]-tt[1])) < math.Abs(float64(h[0]-best[0]))+math.Abs(float64(h[1]-best[1])) {
+			best = tt
+			ok = true
 		}
 	}
-	if math.Abs(float64(h[0] - t[0])) > 1 || math.Abs(float64(h[1] - t[1])) > 1 {
-		fmt.Println("bad", h, t, h[0] - t[0], h[1] - t[1])
+
+	if !ok {
+		// There was no move better that the starting position!
+		panic("bad")
 	}
-	return t
+	if math.Abs(float64(h[0]-best[0])) > 1 || math.Abs(float64(h[1]-best[1])) > 1 {
+		fmt.Println("bad", h, t, h[0]-t[0], h[1]-t[1])
+	}
+	return best
 }
