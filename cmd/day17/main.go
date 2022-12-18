@@ -46,8 +46,38 @@ func main() {
 
 	seq := []uint32{0, 0, 0, 0, 0, 0, 0, 0}
 
+	type State struct {
+		top [1000]uint32
+		jet int
+	}
 	jet := 0
-	for y := 0; y < 2022; y++ {
+	seen := make(map[State]bool)
+	top := [1000]uint32{}
+	gotIt, repeat := false, State{}
+	y0, l0 := 0, 0
+	//for y := 0; y < 2022; y++ {
+	for y := 0; y < 1000000000000; y++ {
+		if len(seq) > 1000 {
+			for q := range top {
+				top[q] = seq[len(seq)-1-q]
+			}
+			state := State{top, jet}
+			if !gotIt {
+				if seen[state] {
+					gotIt, repeat, y0, l0 = true, state, y, len(seq)
+					//panic("repeat")
+				}
+				seen[state] = true
+			} else if state == repeat {
+				fmt.Println(y, jet, len(seq), seq[:5], y0, y-y0, len(seq)-l0)
+				warp := (1000000000000-y0)/(y-y0) - 1
+				y += warp * (y - y0)
+				fmt.Println(y, warp*(len(seq)-l0))
+			}
+		}
+		if y%1000000 == 0 {
+			fmt.Println(y)
+		}
 		b := block[y%5]
 		//		print(b[:], 0)
 		i := len(seq) - 1
@@ -57,17 +87,17 @@ func main() {
 			}
 		}
 		i += 4
-		fmt.Println(i)
+		//fmt.Println(i)
 		shift := 0
 		print2(seq, b, shift, i)
 		for i >= 0 {
 			prevShift := shift
 			if input[jet] == '>' {
 				shift--
-				fmt.Println("right")
+				//fmt.Println("right")
 			} else if input[jet] == '<' {
 				shift++
-				fmt.Println("left")
+				//fmt.Println("left")
 			} else {
 				panic("stohsut")
 			}
@@ -120,9 +150,9 @@ func main() {
 		// print(seq, 0)
 		// fmt.Println("  876543210\n\n")
 	}
-	fmt.Println("  876543210")
-	print(seq, 0)
-	fmt.Println("  876543210\n\n")
+	// fmt.Println("  876543210")
+	// print(seq, 0)
+	// fmt.Println("  876543210\n\n")
 	fmt.Println(seq, len(seq))
 }
 
