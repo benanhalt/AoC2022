@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-const nValves = 60
+const nValves = 15
 
 type Room struct {
 	label   string
@@ -16,10 +16,10 @@ type Room struct {
 }
 
 type State struct {
-	time     int
 	closed   [nValves]string
 	location [2]string
 	opening  [2]bool
+	time     int
 }
 
 type Result struct {
@@ -31,6 +31,7 @@ func main() {
 	f, _ := os.ReadFile("ex.txt")
 	lines := strings.Split(strings.TrimSpace(string(f)), "\n")
 
+	totalRate := 0
 	rooms := make(map[string]Room, len(lines))
 	for _, line := range lines {
 		words := strings.Split(line, " ")
@@ -45,6 +46,7 @@ func main() {
 		}
 		rooms[label] = Room{label, rate, tunnels}
 		fmt.Println(rooms[label])
+		totalRate += rate
 	}
 
 	posActions := func(s State, n int) []string {
@@ -113,10 +115,14 @@ func main() {
 
 	var optimal func(s State) Result
 	optimal = func(s State) Result {
+		if s.location[0] > s.location[1] {
+			s.location[0], s.location[1] = s.location[1], s.location[0]
+			s.opening[0], s.opening[1] = s.opening[1], s.opening[0]
+		}
 		if cached, found := cache[s]; found {
 			return cached
 		}
-		if s.time < 1 {
+		if s.time < 2 {
 			return Result{0, nil}
 		}
 		best := 0
@@ -140,6 +146,7 @@ func main() {
 			}
 		}
 		cache[s] = Result{best, bestActions}
+		//		fmt.Println(s, best)
 		return cache[s]
 	}
 
@@ -148,9 +155,10 @@ func main() {
 	for l, r := range rooms {
 		if r.rate > 0 {
 			valves[i] = l
+			i++
 		}
-		i++
 	}
+	fmt.Println(valves)
 	fmt.Println(optimal(State{
 		time:     26,
 		location: [2]string{"AA", "AA"},
