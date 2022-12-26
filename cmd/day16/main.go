@@ -10,30 +10,28 @@ import (
 const nValves = 15
 
 type Room struct {
+	idx     int
 	label   string
 	rate    int
 	tunnels []string
 }
 
 type State struct {
-	closed   [nValves]string
-	location [2]string
-	opening  [2]bool
+	closed   uint64
+	location int
+	opening  bool
 	time     int
-}
-
-type Result struct {
-	amount  int
-	actions []string
+	players  int
 }
 
 func main() {
-	f, _ := os.ReadFile("ex.txt")
+	f, _ := os.ReadFile("input.txt")
 	lines := strings.Split(strings.TrimSpace(string(f)), "\n")
 
 	totalRate := 0
 	rooms := make(map[string]Room, len(lines))
-	for _, line := range lines {
+	roomsByIdx := make([]Room, len(lines))
+	for i, line := range lines {
 		words := strings.Split(line, " ")
 		label := words[1]
 		rate, _ := strconv.Atoi(
@@ -44,127 +42,124 @@ func main() {
 		for _, word := range words[9:] {
 			tunnels = append(tunnels, strings.TrimSuffix(word, ","))
 		}
-		rooms[label] = Room{label, rate, tunnels}
-		fmt.Println(rooms[label])
+		rooms[label] = Room{i, label, rate, tunnels}
+		roomsByIdx[i] = rooms[label]
 		totalRate += rate
 	}
+	fmt.Println("Part 1:", solve(rooms, roomsByIdx, 30, 1))
+	fmt.Println("Part 2:", solve(rooms, roomsByIdx, 26, 2))
+}
 
+func solve(rooms map[string]Room, roomsByIdx []Room, time, players int) int {
 	posActions := func(s State, n int) []string {
-		// if s.opening[n] {
-		// 	return []string{"finish"}
-		// }
 		result := []string{}
-		for _, t := range rooms[s.location[n]].tunnels {
+		for _, t := range roomsByIdx[s.location].tunnels {
 			result = append(result, t)
 		}
-		if contains(s.closed[:], s.location[n]) {
+		if s.closed&(1<<s.location) != 0 {
 			result = append(result, "open")
 		}
 		return result
 	}
 
-	update := func(s State, as [2]string) State {
-		//fmt.Println("update", s, as)
-		var closed [nValves]string
-		var opening [2]bool
-		var location [2]string
+	update := func(s State, a string) State {
+		closed := s.closed
+		var opening bool
+		var location int
 
-		for i, r := range s.closed {
+		for i := 0; i < len(rooms); i++ {
 			switch {
-			case r == s.location[0] && as[0] == "open":
-				closed[i] = "  "
-			case r == s.location[1] && as[1] == "open":
-				closed[i] = "  "
-			default:
-				closed[i] = s.closed[i]
+			case i == s.location && a == "open":
+				closed = closed & ^(1 << i)
+			case i == s.location && a == "open":
+				closed = closed & ^(1 << i)
 			}
 		}
-		for i := range as {
-			switch as[i] {
-			case "open":
-				opening[i] = true
-				location[i] = s.location[i]
-			// case "finish":
-			// 	opening[i] = false
-			// 	location[i] = s.location[i]
-			default:
-				opening[i] = false
-				location[i] = as[i]
-			}
+		switch a {
+		case "open":
+			opening = true
+			location = s.location
+		default:
+			opening = false
+			location = rooms[a].idx
 		}
+
 		result := State{
 			time:     s.time - 1,
 			closed:   closed,
 			location: location,
 			opening:  opening,
+			players:  s.players,
 		}
 		return result
 	}
 
-	added := func(s State, as [2]string) int {
+	added := func(s State, a string) int {
 		amount := 0
-		for i := range as {
-			if as[i] == "open" {
-				amount += rooms[s.location[i]].rate * (s.time - 1)
-			}
+		if a == "open" {
+			amount += roomsByIdx[s.location].rate * (s.time - 1)
+
 		}
 		return amount
 	}
 
-	cache := make(map[State]Result)
+	cache := make(map[State]int, 10000000)
 
-	var optimal func(s State) Result
-	optimal = func(s State) Result {
-		if s.location[0] > s.location[1] {
-			s.location[0], s.location[1] = s.location[1], s.location[0]
-			s.opening[0], s.opening[1] = s.opening[1], s.opening[0]
-		}
+	var optimal func(s State) int
+	optimal = func(s State) int {
+		// if s.location[0] > s.location[1] {
+		// 	s.location[0], s.location[1] = s.location[1], s.location[0]
+		// 	s.opening[0], s.opening[1] = s.opening[1], s.opening[0]
+		// }
 		if cached, found := cache[s]; found {
 			return cached
 		}
-		if s.time < 2 {
-			return Result{0, nil}
+		if s.time < 1 {
+			if s.players == 0 {
+				return 0
+			}
+			return optimal(State{
+				time:     26,
+				location: rooms["AA"].idx,
+				opening:  false,
+				closed:   s.closed,
+				players:  s.players - 1,
+			})
 		}
+
 		best := 0
-		var bestActions []string
-		for _, action0 := range posActions(s, 0) {
-			for _, action1 := range posActions(s, 1) {
-				if action0 == "open" && action1 == "open" && s.location[0] == s.location[1] {
-					continue
-				}
-				actions := [2]string{action0, action1}
-				ns := update(s, actions)
-				sub := optimal(ns)
-				score := sub.amount + added(s, actions)
-				if s.location[0] == "DD" && s.time == 30 {
-					fmt.Println(s.closed, s.time, s.location, s.opening, sub, score)
-				}
-				if score > best {
-					best = score
-					bestActions = append([]string{actions[0] + fmt.Sprint(31-s.time), actions[1]}, sub.actions...)
-				}
+		for _, action := range posActions(s, 0) {
+			// action1 := ""
+			ns := update(s, action)
+			sub := optimal(ns)
+			score := sub + added(s, action)
+
+			if score > best {
+				best = score
 			}
 		}
-		cache[s] = Result{best, bestActions}
-		//		fmt.Println(s, best)
+
+		cache[s] = best
+
+		if len(cache)%1000000 == 0 {
+			fmt.Println("Seen", len(cache))
+		}
 		return cache[s]
 	}
 
-	valves := [nValves]string{}
-	i := 0
-	for l, r := range rooms {
+	var valves uint64
+	for _, r := range roomsByIdx {
 		if r.rate > 0 {
-			valves[i] = l
-			i++
+			valves = valves | (1 << r.idx)
 		}
 	}
-	fmt.Println(valves)
-	fmt.Println(optimal(State{
-		time:     26,
-		location: [2]string{"AA", "AA"},
-		opening:  [2]bool{},
+	return optimal(State{
+		time:     time,
+		location: rooms["AA"].idx,
+		opening:  false,
 		closed:   valves,
-	}))
+		players:  players - 1,
+	})
 }
 
 func contains(ss []string, s string) bool {
