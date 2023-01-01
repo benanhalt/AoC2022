@@ -15,7 +15,6 @@ func main() {
 
 	path := lines[len(lines)-1]
 
-	d := "R"
 	r := 0
 	c := 0
 	for cc, p := range lines[0] {
@@ -24,7 +23,6 @@ func main() {
 			break
 		}
 	}
-	fmt.Println(r, c, d)
 
 	cMax := 0
 	for _, line := range lines[:len(lines)-1] {
@@ -34,7 +32,6 @@ func main() {
 	}
 
 	rMax := len(lines) - 2
-	fmt.Println(rMax, cMax)
 
 	grid := make(Grid)
 	for rr := 0; rr < rMax; rr++ {
@@ -45,28 +42,35 @@ func main() {
 			}
 		}
 	}
+	solve(1, grid, rMax, cMax, path, r, c)
+	solve(2, grid, rMax, cMax, path, r, c)
+}
 
+func solve(part int, grid Grid, rMax, cMax int, path string, r, c int) {
+	var advance func(grid Grid, rMax, cMax, r, c int, d string) (int, int, string)
+	if part == 2 {
+		advance = advance2
+	} else {
+		advance = advance1
+	}
 	s := 0
-	p := make(Grid)
+	d := "R"
 	for i := 0; i < len(path); i++ {
 		if unicode.IsDigit(rune(path[i])) {
 			s = 10*s + int(path[i]-'0')
 			continue
 		} else {
 			for t := 0; t < s; t++ {
-				r, c = advance(grid, rMax, cMax, r, c, d)
-				p[[2]int{r, c}] = rune(d[0])
+				r, c, d = advance(grid, rMax, cMax, r, c, d)
 				// fmt.Println(r, c, d, t)
 			}
 			d = steer(path[i], d)
-			p[[2]int{r, c}] = rune(d[0])
 			// fmt.Println(r, c, d)
 			s = 0
 		}
 	}
 	for t := 0; t < s; t++ {
-		r, c = advance(grid, rMax, cMax, r, c, d)
-		p[[2]int{r, c}] = rune(d[0])
+		r, c, d = advance(grid, rMax, cMax, r, c, d)
 		// fmt.Println(r, c, d, t)
 	}
 	var q int
@@ -83,8 +87,8 @@ func main() {
 		panic(d)
 	}
 	// show(rMax, cMax, grid, p)
-	fmt.Println(r, c, d)
-	fmt.Println(q + 4*(c+1) + 1000*(r+1))
+	//fmt.Println(r, c, d)
+	fmt.Println("Part ", part, ":", q+4*(c+1)+1000*(r+1))
 }
 
 func steer(lr byte, d string) string {
@@ -115,7 +119,7 @@ func steer(lr byte, d string) string {
 	return d
 }
 
-func advance(grid Grid, rMax, cMax, r, c int, d string) (int, int) {
+func advance1(grid Grid, rMax, cMax, r, c int, d string) (int, int, string) {
 	rr, cc := r, c
 	switch d {
 	case "R":
@@ -156,10 +160,104 @@ func advance(grid Grid, rMax, cMax, r, c int, d string) (int, int) {
 		}
 	}
 	if grid[[2]int{rr, cc}] == '#' {
-		return r, c
+		return r, c, d
 	}
 	if grid[[2]int{rr, cc}] == '.' {
-		return rr, cc
+		return rr, cc, d
+	}
+	panic(fmt.Sprint(rr, cc, grid[[2]int{rr, cc}]))
+}
+
+func advance2(grid Grid, rMax, cMax, r, c int, d string) (int, int, string) {
+	face := [2]int{r / 50, c / 50}
+	rr, cc, dd := r, c, d
+	switch d {
+	case "R":
+		cc += 1
+		if cc%50 == 0 {
+			switch face {
+			case [2]int{0, 2}:
+				cc = 50*1 + 49
+				rr = 50*2 + 49 - rr
+				dd = "L"
+			case [2]int{1, 1}:
+				cc = 50*2 + rr%50
+				rr = 49
+				dd = "U"
+			case [2]int{2, 1}:
+				cc = 50 + 2 + 49
+				rr = 49 - rr%50
+				dd = "L"
+			case [2]int{3, 0}:
+				cc = 50 + rr%50
+				rr = 50*2 + 49
+				dd = "U"
+			}
+		}
+	case "L":
+		cc -= 1
+		if (cc+50)%50 == 49 {
+			switch face {
+			case [2]int{0, 1}:
+				cc = 0
+				rr = 50*2 + 49 - rr
+				dd = "R"
+			case [2]int{1, 1}:
+				cc = rr % 50
+				rr = 50 * 2
+				dd = "D"
+			case [2]int{2, 0}:
+				cc = 50
+				rr = 49 - rr%50
+				dd = "R"
+			case [2]int{3, 0}:
+				cc = 50 + rr%50
+				rr = 0
+				dd = "D"
+			}
+		}
+	case "U":
+		rr -= 1
+		if (rr+50)%50 == 49 {
+			switch face {
+			case [2]int{2, 0}:
+				rr = 50*1 + cc%50
+				cc = 50 * 1
+				dd = "R"
+			case [2]int{0, 1}:
+				rr = 50*3 + cc%50
+				cc = 0
+				dd = "R"
+			case [2]int{0, 2}:
+				rr = 50*3 + 49
+				cc = cc % 50
+				dd = "U"
+			}
+		}
+	case "D":
+		rr += 1
+		if rr%50 == 0 {
+			switch face {
+			case [2]int{3, 0}:
+				rr = 0
+				cc = 50*2 + cc%50
+				dd = "D"
+			case [2]int{2, 1}:
+				rr = 50*3 + cc%50
+				cc = 49
+				dd = "L"
+			case [2]int{0, 2}:
+				rr = 50 + cc%50
+				cc = 50*1 + 49
+				dd = "L"
+			}
+		}
+	}
+	if grid[[2]int{rr, cc}] == '#' {
+		return r, c, d
+	}
+	if grid[[2]int{rr, cc}] == '.' {
+		return rr, cc, dd
 	}
 	panic(fmt.Sprint(rr, cc, grid[[2]int{rr, cc}]))
 }
