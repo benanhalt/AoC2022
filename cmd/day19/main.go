@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"runtime"
 	"strconv"
 	"strings"
 )
@@ -22,7 +23,6 @@ func main() {
 	f, _ := os.ReadFile("input.txt")
 	lines := strings.Split(strings.TrimSpace(string(f)), "\n")
 
-	//Blueprint 1: Each ore robot costs 2 ore. Each clay robot costs 4 ore. Each obsidian robot costs 4 ore and 15 clay. Each geode robot costs 2 ore and 15 obsidian.
 	var bps []Blueprint
 	for _, line := range lines {
 		bp := Blueprint{}
@@ -38,15 +38,14 @@ func main() {
 	}
 
 	optimize := func(bp Blueprint, s State) int {
+		fmt.Println("optimize", bp.id)
 		maxRate := [3]int{}
 		for i := 0; i < 3; i++ {
 			maxRate[i] = max([]int{bp.matrix[0][i], bp.matrix[1][i], bp.matrix[2][i], bp.matrix[3][i]})
 		}
-		fmt.Println(maxRate)
 		cache := make(map[State]int)
 		var optimal func(s State) int
 		optimal = func(s State) int {
-			// fmt.Println(s)
 			if s.time < 1 {
 				return s.resources[3]
 			}
@@ -58,7 +57,6 @@ func main() {
 			for j := range nexts.resources {
 				nexts.resources[j] += nexts.robots[j]
 				if j != 3 && nexts.resources[j] > maxRate[j]*(s.time) {
-					// fmt.Println("too much", j, nexts.resources, maxRate[j]*nexts.time)
 					nexts.resources[j] = maxRate[j] * (s.time)
 				}
 			}
@@ -69,7 +67,6 @@ func main() {
 					ns := nexts
 					ok := true
 					for j := range ns.resources {
-						//fmt.Println("ns.resources[i] -= bp.matrix[i][j]", i, j, ns.resources[i], bp.matrix[i][j])
 						ns.resources[j] -= bp.matrix[i][j]
 						if s.resources[j] < bp.matrix[i][j] {
 							ok = false
@@ -78,14 +75,12 @@ func main() {
 					}
 					if ok {
 						ns.robots[i]++
-						// fmt.Println("add robot", i, s, ns)
 						sub := optimal(ns)
 						if sub > best {
 							best = sub
 						}
 					}
 				}
-				// fmt.Println("i ns", i, ns)
 			}
 			cache[s] = best
 			return best
@@ -93,20 +88,20 @@ func main() {
 		return optimal(s)
 	}
 	ans := 0
-	// for i, bp := range bps {
-	// 	ans += optimize(bp, State{time: 24, robots: [4]int{1}}) * (i + 1)
-	// }
-	// fmt.Println(ans)
+	for i, bp := range bps {
+		ans += optimize(bp, State{time: 24, robots: [4]int{1}}) * (i + 1)
+		runtime.GC()
+	}
+	fmt.Println("Part 1:", ans)
 
 	ans = 1
-	for _, bp := range bps[1:] {
+	for _, bp := range bps[:3] {
 		score := optimize(bp, State{time: 32, robots: [4]int{1}})
+		runtime.GC()
 		ans *= score
 		fmt.Println(score)
 	}
-	fmt.Println(ans)
-	// fmt.Println(optimize(bps[0], State{time: 24, robots: [4]int{1}}))
-	// fmt.Println(optimize(bps[0], State{time: 1, robots: [4]int{1, 4, 2, 2}, resources: [4]int{5, 37, 6, 7}}))
+	fmt.Println("Part 2:", ans)
 }
 
 func max(xs []int) int {
