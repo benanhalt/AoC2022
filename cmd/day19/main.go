@@ -14,9 +14,9 @@ type Blueprint struct {
 }
 
 type State struct {
-	time      int
-	resources [4]int
-	robots    [4]int
+	time      uint16
+	resources [4]uint16
+	robots    [4]uint16
 }
 
 func main() {
@@ -39,15 +39,15 @@ func main() {
 
 	optimize := func(bp Blueprint, s State) int {
 		fmt.Println("optimize", bp.id)
-		maxRate := [3]int{}
+		maxRate := [3]uint16{}
 		for i := 0; i < 3; i++ {
-			maxRate[i] = max([]int{bp.matrix[0][i], bp.matrix[1][i], bp.matrix[2][i], bp.matrix[3][i]})
+			maxRate[i] = uint16(max([]int{bp.matrix[0][i], bp.matrix[1][i], bp.matrix[2][i], bp.matrix[3][i]}))
 		}
 		cache := make(map[State]int)
 		var optimal func(s State) int
 		optimal = func(s State) int {
 			if s.time < 1 {
-				return s.resources[3]
+				return int(s.resources[3])
 			}
 			if r, found := cache[s]; found {
 				return r
@@ -67,8 +67,8 @@ func main() {
 					ns := nexts
 					ok := true
 					for j := range ns.resources {
-						ns.resources[j] -= bp.matrix[i][j]
-						if s.resources[j] < bp.matrix[i][j] {
+						ns.resources[j] -= uint16(bp.matrix[i][j])
+						if s.resources[j] < uint16(bp.matrix[i][j]) {
 							ok = false
 							break
 						}
@@ -89,14 +89,14 @@ func main() {
 	}
 	ans := 0
 	for i, bp := range bps {
-		ans += optimize(bp, State{time: 24, robots: [4]int{1}}) * (i + 1)
+		ans += optimize(bp, State{time: 24, robots: [4]uint16{1}}) * (i + 1)
 		runtime.GC()
 	}
 	fmt.Println("Part 1:", ans)
 
 	ans = 1
 	for _, bp := range bps[:3] {
-		score := optimize(bp, State{time: 32, robots: [4]int{1}})
+		score := optimize(bp, State{time: 32, robots: [4]uint16{1}})
 		runtime.GC()
 		ans *= score
 		fmt.Println(score)
